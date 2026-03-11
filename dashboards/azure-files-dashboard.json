@@ -1,0 +1,112 @@
+{
+  "$schema": "https://portal.azure.com/Portal/Content/3.0/Portal/DashboardSchemas/schema.json",
+  "metadata": {
+    "description": "Azure Files PoC monitoring dashboard. Shows file share transactions, latency, bandwidth, top operations, and errors from Log Analytics.",
+    "version": "1.0.0"
+  },
+  "notes": [
+    "This JSON is a reference export of the dashboard deployed by monitoring.bicep.",
+    "You can customize it in the Azure portal and re-export, or edit this file and",
+    "re-deploy via Bicep. The dashboard pulls data from StorageFileLogs in the LAW.",
+    "",
+    "Tiles:",
+    "  Row 0: Header markdown",
+    "  Row 1: Transaction volume (last 24h) | Latency percentiles (P50/P95/P99)",
+    "  Row 2: Ingress/Egress MB            | Top 10 operations by count",
+    "  Row 3: Error details (status >= 400) -- full width grid"
+  ],
+  "lenses": [
+    {
+      "order": 0,
+      "parts": [
+        {
+          "position": { "x": 0, "y": 0, "colSpan": 12, "rowSpan": 1 },
+          "metadata": {
+            "type": "Extension/HubsExtension/PartType/MarkdownPart",
+            "inputs": [],
+            "settings": {
+              "content": {
+                "settings": {
+                  "content": "## Azure Files PoC -- Monitoring Dashboard\nShows key metrics for file shares deployed by this PoC. Data source: StorageFileLogs in the Log Analytics workspace.",
+                  "title": "",
+                  "subtitle": "",
+                  "markdownSource": 1,
+                  "markdownUri": null
+                }
+              }
+            }
+          }
+        },
+        {
+          "position": { "x": 0, "y": 1, "colSpan": 6, "rowSpan": 4 },
+          "metadata": {
+            "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+            "inputs": [],
+            "settings": {
+              "content": {
+                "Query": "StorageFileLogs\n| where TimeGenerated > ago(24h)\n| summarize RequestCount=count(), Failures=countif(StatusCode >= 400) by bin(TimeGenerated, 1h)\n| render timechart",
+                "ControlType": "FrameControlChart",
+                "SpecificChart": "Line"
+              }
+            }
+          }
+        },
+        {
+          "position": { "x": 6, "y": 1, "colSpan": 6, "rowSpan": 4 },
+          "metadata": {
+            "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+            "inputs": [],
+            "settings": {
+              "content": {
+                "Query": "StorageFileLogs\n| where TimeGenerated > ago(24h)\n| summarize P50=percentile(DurationMs, 50), P95=percentile(DurationMs, 95), P99=percentile(DurationMs, 99) by bin(TimeGenerated, 1h)\n| render timechart",
+                "ControlType": "FrameControlChart",
+                "SpecificChart": "Line"
+              }
+            }
+          }
+        },
+        {
+          "position": { "x": 0, "y": 5, "colSpan": 6, "rowSpan": 4 },
+          "metadata": {
+            "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+            "inputs": [],
+            "settings": {
+              "content": {
+                "Query": "StorageFileLogs\n| where TimeGenerated > ago(24h)\n| summarize IngressMB=sum(RequestBodySize)/1048576.0, EgressMB=sum(ResponseBodySize)/1048576.0 by bin(TimeGenerated, 1h)\n| render timechart",
+                "ControlType": "FrameControlChart",
+                "SpecificChart": "Area"
+              }
+            }
+          }
+        },
+        {
+          "position": { "x": 6, "y": 5, "colSpan": 6, "rowSpan": 4 },
+          "metadata": {
+            "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+            "inputs": [],
+            "settings": {
+              "content": {
+                "Query": "StorageFileLogs\n| where TimeGenerated > ago(24h)\n| summarize Count=count() by OperationName\n| top 10 by Count desc\n| render barchart",
+                "ControlType": "FrameControlChart",
+                "SpecificChart": "Bar"
+              }
+            }
+          }
+        },
+        {
+          "position": { "x": 0, "y": 9, "colSpan": 12, "rowSpan": 4 },
+          "metadata": {
+            "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+            "inputs": [],
+            "settings": {
+              "content": {
+                "Query": "StorageFileLogs\n| where TimeGenerated > ago(24h) and StatusCode >= 400\n| project TimeGenerated, OperationName, StatusCode, StatusText, Uri, CallerIpAddress\n| order by TimeGenerated desc\n| take 100",
+                "ControlType": "AnalyticsGrid"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

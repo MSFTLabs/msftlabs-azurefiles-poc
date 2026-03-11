@@ -1,0 +1,12 @@
+prompt.txt
+
+# AZD environment files (contain secrets/subscription IDs)
+.azure/
+
+# PowerShell migration logs
+scripts/logs/
+
+# OS junk
+Thumbs.db
+Desktop.ini
+.DS_Store
